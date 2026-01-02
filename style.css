@@ -1,0 +1,54 @@
+html, body {
+  height: 100%;
+  margin: 0;
+  background: #ffffff;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+}
+#game {
+  display: block;
+  margin: 0;
+  width: 100vw;
+  height: 100vh;
+  border-radius: 0;
+  box-shadow: none;
+  background: #ffffff;
+}
+
+#restartOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+#restart {
+  pointer-events: auto;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 999px;
+  background: #f3c27a;
+  color: #4a2e17;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(74, 46, 23, 0.18);
+  min-width: 140px;
+}
+
+#restart:hover {
+  background: #f0b768;
+}
+
+#restart:active {
+  transform: translateY(1px);
+}
+
+/* Help text (small, optional) */
+.hint {
+  text-align: center;
+  color: #6b4f34;
+  margin-top: 6px;
+}

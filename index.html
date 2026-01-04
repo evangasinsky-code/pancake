@@ -8,8 +8,99 @@
   </head>
   <body>
     <canvas id="game"></canvas>
-    <div id="restartOverlay" aria-hidden="true">
-      <button id="restart" type="button">Restart</button>
+    <div id="mainMenu" aria-hidden="false">
+      <div class="menu-card" id="menuCard">
+        <h1>Pancake.io</h1>
+        <p>Drag, aim, and splat your way to the top.</p>
+        <div class="menu-name">
+          <input id="menuNameInput" type="text" maxlength="25" placeholder="Enter your name">
+          <button id="menuNameSave" type="button">Save Name</button>
+        </div>
+        <button id="startGame" type="button">Play</button>
+        <button id="customizePancake" type="button">Customize Pancake</button>
+        <button id="menuControls" type="button">Controls</button>
+      </div>
+      <div class="menu-card" id="customizePanel" aria-hidden="true">
+        <h2>Customize Pancake</h2>
+        <canvas id="pancakePreview" width="200" height="200"></canvas>
+        <label class="customize-option">
+          <input id="toggleChips" type="checkbox">
+          Chocolate chips
+        </label>
+        <label class="customize-option">
+          <input id="toggleCream" type="checkbox">
+          Whipped cream
+        </label>
+        <label class="customize-option">
+          <input id="toggleBlueberry" type="checkbox" disabled>
+          <span>Blueberries (unlock at 1000+ high score)</span>
+        </label>
+        <label class="customize-option">
+          <input id="toggleStrawberry" type="checkbox" disabled>
+          <span>Strawberries (unlock at 5,000+ high score)</span>
+        </label>
+        <label class="customize-option">
+          <input id="toggleRaspberry" type="checkbox" disabled>
+          <span>Raspberries (unlock at 10,000+ high score)</span>
+        </label>
+        <label class="customize-option">
+          <input id="togglePineapple" type="checkbox" disabled>
+          <span>Pineapple (unlock at 50,000+ high score)</span>
+        </label>
+        <label class="customize-option">
+          <input id="toggleMaple" type="checkbox" disabled>
+          <span>Maple syrup (unlock at 75,000+ high score)</span>
+        </label>
+        <label class="customize-option">
+          <input id="toggleMango" type="checkbox" disabled>
+          <span>Mango (unlock at 100,000+ high score)</span>
+        </label>
+        <label class="customize-option">
+          <input id="toggleBanana" type="checkbox" disabled>
+          <span>Banana (unlock at 500,000+ high score)</span>
+        </label>
+        <label class="customize-option">
+          <input id="toggleChocolatePancake" type="checkbox" disabled>
+          <span>Surprise (unlock at 1,000,000+ high score)</span>
+        </label>
+        <button id="customizeDone" type="button">Done</button>
+      </div>
+    </div>
+    <div id="hudPanel">
+      <div id="hudName">Name: <span id="hudNameValue"></span></div>
+      <div id="hudHighScore">High: <span id="hudHighScoreValue"></span></div>
+      <div id="leaderboard">
+        <div class="leaderboard-title">Top 5</div>
+        <ol id="leaderboardList"></ol>
+      </div>
+      <button id="menuToggle" type="button">Main Menu</button>
+      <button id="controlsToggle" type="button">Controls</button>
+      <button id="changeName" type="button">Change Name</button>
+    </div>
+    <div id="controlsPanel" aria-hidden="true">
+        <div class="controls-title">How to Play</div>
+        <ul>
+          <li>Move: Arrow keys</li>
+          <li>Aim: QWE/AD/ZXC</li>
+          <li>Shoot: S or Space</li>
+          <li>Drag: Click your pancake</li>
+          <li>Change name: N key</li>
+        </ul>
+      </div>
+    <div id="debugPanel">
+      <div class="debug-title">Debug</div>
+      <div id="debugStatus">OK</div>
+      <div id="debugError"></div>
+    </div>
+    <button id="restart" type="button">Restart</button>
+    <div id="restartPrompt" aria-hidden="true">
+      <div class="prompt-card">
+        <h2>Would you like to play again?</h2>
+        <div class="prompt-actions">
+          <button id="restartYes" type="button">Yes</button>
+          <button id="restartNo" type="button">No</button>
+        </div>
+      </div>
     </div>
     <script src="main.js"></script>
   </body>

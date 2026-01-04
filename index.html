@@ -3,14 +3,14 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Pancake.io</title>
+    <title>Syrup the Pancake.io</title>
     <link rel="stylesheet" href="style.css">
   </head>
   <body>
     <canvas id="game"></canvas>
     <div id="mainMenu" aria-hidden="false">
       <div class="menu-card" id="menuCard">
-        <h1>Pancake.io</h1>
+        <h1>Syrup the Pancake.io</h1>
         <p>Drag, aim, and splat your way to the top.</p>
         <div class="menu-name">
           <input id="menuNameInput" type="text" maxlength="25" placeholder="Enter your name">
@@ -19,6 +19,14 @@
         <button id="startGame" type="button">Play</button>
         <button id="customizePancake" type="button">Customize Pancake</button>
         <button id="menuControls" type="button">Controls</button>
+        <button id="hostGame" type="button">Host Game</button>
+        <button id="findGame" type="button">Find Game</button>
+      </div>
+      <div class="menu-card" id="roomsPanel" aria-hidden="true">
+        <h2>Active Rooms</h2>
+        <div id="roomsList"></div>
+        <button id="roomsRefresh" type="button">Refresh</button>
+        <button id="roomsClose" type="button">Close</button>
       </div>
       <div class="menu-card" id="customizePanel" aria-hidden="true">
         <h2>Customize Pancake</h2>
@@ -67,6 +75,7 @@
       </div>
     </div>
     <div id="hudPanel">
+      <div id="siteName">syrupthepancake.io</div>
       <div id="hudName">Name: <span id="hudNameValue"></span></div>
       <div id="hudHighScore">High: <span id="hudHighScoreValue"></span></div>
       <div id="leaderboard">

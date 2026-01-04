@@ -1,4 +1,4 @@
-# pancake.io — movable pancake demo
+# Syrup the Pancake.io — movable pancake demo
 
 Simple demo: move the pancake with the arrow keys or WASD.
 
@@ -16,3 +16,10 @@ python3 -m http.server 8000
 Controls
 
 - Arrow keys or `W` `A` `S` `D` to move the pancake.
+
+Multiplayer (Render)
+
+- Server code lives in `server.js` and uses WebSockets (`ws`).
+- Deploy `server.js` to Render as a web service (uses `render.yaml`).
+- After deploy, set `MULTIPLAYER_URL` in `main.js` to your Render wss URL.
+- In the main menu, use **Host Game** or **Find Game**.

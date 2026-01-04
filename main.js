@@ -6,6 +6,7 @@ const music = new Audio('assets/song.m4a');
 music.loop = true;
 music.volume = 0.6;
 let musicStarted = false;
+const MULTIPLAYER_URL = window.MULTIPLAYER_URL || 'wss://YOUR-RENDER-URL';
 function startMusic() {
   if (musicStarted) return;
   musicStarted = true;
@@ -115,6 +116,12 @@ const customizePanel = document.getElementById('customizePanel');
 const menuControls = document.getElementById('menuControls');
 const menuNameInput = document.getElementById('menuNameInput');
 const menuNameSave = document.getElementById('menuNameSave');
+const hostGameButton = document.getElementById('hostGame');
+const findGameButton = document.getElementById('findGame');
+const roomsPanel = document.getElementById('roomsPanel');
+const roomsList = document.getElementById('roomsList');
+const roomsRefresh = document.getElementById('roomsRefresh');
+const roomsClose = document.getElementById('roomsClose');
 const toggleChips = document.getElementById('toggleChips');
 const toggleCream = document.getElementById('toggleCream');
 const toggleBlueberry = document.getElementById('toggleBlueberry');
@@ -188,6 +195,107 @@ function updateHud() {
     toggleChocolatePancake.disabled = !unlocked;
     if (!unlocked) toggleChocolatePancake.checked = false;
   }
+}
+
+const multiplayer = {
+  active: false,
+  socket: null,
+  roomId: null,
+  playerId: null,
+  state: null,
+  lastSend: 0,
+  moveOverride: null
+};
+
+function connectMultiplayer() {
+  if (multiplayer.socket && multiplayer.socket.readyState === WebSocket.OPEN) return;
+  multiplayer.socket = new WebSocket(MULTIPLAYER_URL);
+  multiplayer.socket.addEventListener('message', (event) => {
+    let msg;
+    try {
+      msg = JSON.parse(event.data);
+    } catch {
+      return;
+    }
+    if (msg.type === 'rooms') {
+      renderRooms(msg.rooms || []);
+      return;
+    }
+    if (msg.type === 'joined') {
+      multiplayer.active = true;
+      multiplayer.roomId = msg.roomId;
+      multiplayer.playerId = msg.playerId;
+      gameStarted = true;
+      if (mainMenu) {
+        mainMenu.style.display = 'none';
+        mainMenu.setAttribute('aria-hidden', 'true');
+      }
+      if (roomsPanel) {
+        roomsPanel.style.display = 'none';
+        roomsPanel.setAttribute('aria-hidden', 'true');
+      }
+      setDebugStatus('Multiplayer');
+      return;
+    }
+    if (msg.type === 'state') {
+      multiplayer.state = msg;
+      const me = msg.players && msg.players.find((p) => p.id === multiplayer.playerId);
+      if (me) {
+        pancake.x = me.x;
+        pancake.y = me.y;
+        pancake.points = me.points;
+        gameOver = !me.alive;
+        if (gameOver) {
+          document.body.classList.add('game-over');
+        } else {
+          document.body.classList.remove('game-over');
+        }
+      }
+      if (msg.world) {
+        world.width = msg.world.width;
+        world.height = msg.world.height;
+      }
+      return;
+    }
+    if (msg.type === 'error') {
+      setDebugStatus(msg.message || 'Multiplayer error');
+    }
+  });
+  multiplayer.socket.addEventListener('close', () => {
+    multiplayer.active = false;
+    multiplayer.roomId = null;
+    multiplayer.playerId = null;
+    multiplayer.state = null;
+  });
+}
+
+function sendMultiplayer(payload) {
+  if (!multiplayer.socket || multiplayer.socket.readyState !== WebSocket.OPEN) return;
+  multiplayer.socket.send(JSON.stringify(payload));
+}
+
+function renderRooms(rooms) {
+  if (!roomsList) return;
+  roomsList.textContent = '';
+  if (!rooms.length) {
+    roomsList.textContent = 'No active rooms yet.';
+    return;
+  }
+  rooms.forEach((room) => {
+    const row = document.createElement('div');
+    row.className = 'room-entry';
+    const label = document.createElement('div');
+    label.textContent = `${room.name} (${room.count}/10)`;
+    const join = document.createElement('button');
+    join.textContent = 'Join';
+    join.addEventListener('click', () => {
+      connectMultiplayer();
+      sendMultiplayer({ type: 'join', roomId: room.id, name: nickname });
+    });
+    row.appendChild(label);
+    row.appendChild(join);
+    roomsList.appendChild(row);
+  });
 }
 
 function loadToppings() {
@@ -368,13 +476,23 @@ const savedToppings = loadToppings();
 
 function updateLeaderboard() {
   if (!leaderboardList) return;
-  if (!Array.isArray(aiPancakes)) return;
   const entries = [];
-  entries.push({ name: pancake.name, points: pancake.points });
-  aiPancakes.forEach((ai) => {
-    if (!ai.alive) return;
-    entries.push({ name: ai.name, points: ai.points });
-  });
+  if (multiplayer.active && multiplayer.state) {
+    (multiplayer.state.players || []).forEach((player) => {
+      if (!player.alive) return;
+      entries.push({ name: player.name, points: player.points });
+    });
+    (multiplayer.state.ai || []).forEach((ai) => {
+      entries.push({ name: ai.name, points: ai.points });
+    });
+  } else {
+    if (!Array.isArray(aiPancakes)) return;
+    entries.push({ name: pancake.name, points: pancake.points });
+    aiPancakes.forEach((ai) => {
+      if (!ai.alive) return;
+      entries.push({ name: ai.name, points: ai.points });
+    });
+  }
   entries.sort((a, b) => b.points - a.points);
   const top = entries.slice(0, 5);
 
@@ -413,6 +531,37 @@ if (menuControls && controlsPanel) {
     const isHidden = controlsPanel.style.display === '' || controlsPanel.style.display === 'none';
     controlsPanel.style.display = isHidden ? 'block' : 'none';
     controlsPanel.setAttribute('aria-hidden', isHidden ? 'false' : 'true');
+  });
+}
+
+if (hostGameButton) {
+  hostGameButton.addEventListener('click', () => {
+    connectMultiplayer();
+    const roomName = window.prompt('Room name (optional):') || '';
+    sendMultiplayer({ type: 'host', name: nickname, roomName });
+  });
+}
+
+if (findGameButton && roomsPanel) {
+  findGameButton.addEventListener('click', () => {
+    connectMultiplayer();
+    roomsPanel.style.display = 'block';
+    roomsPanel.setAttribute('aria-hidden', 'false');
+    sendMultiplayer({ type: 'list_rooms' });
+  });
+}
+
+if (roomsRefresh) {
+  roomsRefresh.addEventListener('click', () => {
+    connectMultiplayer();
+    sendMultiplayer({ type: 'list_rooms' });
+  });
+}
+
+if (roomsClose && roomsPanel) {
+  roomsClose.addEventListener('click', () => {
+    roomsPanel.style.display = 'none';
+    roomsPanel.setAttribute('aria-hidden', 'true');
   });
 }
 
@@ -725,9 +874,26 @@ function setGameOver() {
   aim.hasTarget = false;
   setDebugStatus('Game over');
   document.body.classList.add('game-over');
+  syrupSplats.push({
+    x: pancake.x,
+    y: pancake.y,
+    rx: pancake.radius * 1.25,
+    ry: pancake.radius * 0.6,
+    rotation: Math.random() * Math.PI,
+    ownerType: 'player',
+    pickupRadius: pancake.radius * 1.2,
+    pointsValue: Math.max(MIN_POINTS, pancake.points)
+  });
 }
 
 function resetGame() {
+  if (multiplayer.active) {
+    gameOver = false;
+    document.body.classList.remove('game-over');
+    sendMultiplayer({ type: 'restart', roomId: multiplayer.roomId, playerId: multiplayer.playerId });
+    setDebugStatus('Restart requested');
+    return;
+  }
   gameOver = false;
   gameStarted = true;
   drag.active = false;
@@ -783,6 +949,17 @@ function screenToWorld(p) {
 
 function shootSyrup(target) {
   if (gameOver || !gameStarted) return;
+  if (multiplayer.active) {
+    sendMultiplayer({
+      type: 'input',
+      roomId: multiplayer.roomId,
+      playerId: multiplayer.playerId,
+      aimX: target.x,
+      aimY: target.y,
+      shoot: true
+    });
+    return;
+  }
   if (pancake.points <= MIN_POINTS) return;
   shootSyrupFrom(pancake, target, 'player', -1);
   pancake.points = Math.max(MIN_POINTS, pancake.points - SHRINK_PER_SHOT);
@@ -848,8 +1025,15 @@ canvas.addEventListener('pointerdown', (e) => {
 canvas.addEventListener('pointermove', (e) => {
   if (!drag.active) return;
   const p = screenToWorld(pointerToCanvas(e));
-  pancake.x = p.x + drag.offsetX;
-  pancake.y = p.y + drag.offsetY;
+  if (multiplayer.active) {
+    multiplayer.moveOverride = {
+      x: p.x + drag.offsetX,
+      y: p.y + drag.offsetY
+    };
+  } else {
+    pancake.x = p.x + drag.offsetX;
+    pancake.y = p.y + drag.offsetY;
+  }
   e.preventDefault();
 });
 
@@ -863,6 +1047,9 @@ canvas.addEventListener('pointermove', (e) => {
 function stopDrag(e) {
   if (!drag.active) return;
   drag.active = false;
+  if (multiplayer.active) {
+    multiplayer.moveOverride = null;
+  }
   if (e && e.pointerId != null) {
     canvas.releasePointerCapture(e.pointerId);
   }
@@ -1436,7 +1623,7 @@ function loop(now) {
     lastLeaderboardUpdate = now;
   }
 
-  const isPaused = gameOver || !gameStarted;
+  const isPaused = gameOver || !gameStarted || multiplayer.active;
 
   // movement
   if (!isPaused) {
@@ -1451,8 +1638,39 @@ function loop(now) {
     pancake.x += (dx / len) * pancake.speed * dt;
     pancake.y += (dy / len) * pancake.speed * dt;
   }
-  if (!isPaused) {
+  if (!gameOver && gameStarted) {
     updateAimFromKeys();
+  }
+
+  if (multiplayer.active && multiplayer.roomId) {
+    let moveX = 0;
+    let moveY = 0;
+    if (multiplayer.moveOverride) {
+      const dx = multiplayer.moveOverride.x - pancake.x;
+      const dy = multiplayer.moveOverride.y - pancake.y;
+      const len = Math.hypot(dx, dy) || 1;
+      moveX = dx / len;
+      moveY = dy / len;
+    } else {
+      if (keys['ArrowLeft']) moveX -= 1;
+      if (keys['ArrowRight']) moveX += 1;
+      if (keys['ArrowUp']) moveY -= 1;
+      if (keys['ArrowDown']) moveY += 1;
+    }
+    const nowMs = now;
+    if (nowMs - multiplayer.lastSend > 50) {
+      const target = aim.hasTarget ? aim : { x: pancake.x + 1, y: pancake.y };
+      sendMultiplayer({
+        type: 'input',
+        roomId: multiplayer.roomId,
+        playerId: multiplayer.playerId,
+        moveX,
+        moveY,
+        aimX: target.x,
+        aimY: target.y
+      });
+      multiplayer.lastSend = nowMs;
+    }
   }
 
   // AI movement
@@ -1722,24 +1940,49 @@ function loop(now) {
   ctx.translate(zoomOffsetX, zoomOffsetY);
   ctx.scale(CAMERA_ZOOM, CAMERA_ZOOM);
   drawBackground();
-  syrupSplats.forEach(drawSyrupSplat);
-  aiPancakes.forEach((ai) => {
-    if (!ai.alive) return;
-    const drawX = ai.x - camera.x;
-    const drawY = ai.y - camera.y;
-    const drawR = Math.max(8, ai.radius * RENDER_SCALE);
-    if (drawR > 0) {
-      drawPancake(drawX, drawY, drawR, ai.toppings, ai.toppingPatterns);
-      drawNameLabel(ai.name, drawX, drawY, drawR);
+  if (multiplayer.active && multiplayer.state) {
+    const mp = multiplayer.state;
+    const basePlayerRadius = Math.min(80, Math.min(canvas.width, canvas.height) * 0.12);
+    const baseAiRadius = Math.min(60, Math.min(canvas.width, canvas.height) * 0.09);
+    (mp.splats || []).forEach(drawSyrupSplat);
+    (mp.ai || []).forEach((ai) => {
+      const drawX = ai.x - camera.x;
+      const drawY = ai.y - camera.y;
+      const drawR = Math.max(8, (baseAiRadius * (ai.points / POINTS_PER_SIZE)) * RENDER_SCALE);
+      if (drawR > 0) {
+        drawPancake(drawX, drawY, drawR);
+        drawNameLabel(ai.name, drawX, drawY, drawR);
+      }
+    });
+    (mp.shots || []).forEach(drawSyrupShot);
+    (mp.players || []).forEach((player) => {
+      if (!player.alive) return;
+      const drawX = player.x - camera.x;
+      const drawY = player.y - camera.y;
+      const drawR = Math.max(10, (basePlayerRadius * (player.points / POINTS_PER_SIZE)) * RENDER_SCALE);
+      drawPancake(drawX, drawY, drawR, player.id === multiplayer.playerId ? pancake.toppings : null, player.id === multiplayer.playerId ? pancake.toppingPatterns : null);
+      drawNameLabel(player.name, drawX, drawY, drawR);
+    });
+  } else {
+    syrupSplats.forEach(drawSyrupSplat);
+    aiPancakes.forEach((ai) => {
+      if (!ai.alive) return;
+      const drawX = ai.x - camera.x;
+      const drawY = ai.y - camera.y;
+      const drawR = Math.max(8, ai.radius * RENDER_SCALE);
+      if (drawR > 0) {
+        drawPancake(drawX, drawY, drawR, ai.toppings, ai.toppingPatterns);
+        drawNameLabel(ai.name, drawX, drawY, drawR);
+      }
+    });
+    syrupShots.forEach(drawSyrupShot);
+    const playerDrawX = pancake.x - camera.x;
+    const playerDrawY = pancake.y - camera.y;
+    const playerDrawR = Math.max(10, pancake.radius * RENDER_SCALE);
+    if (!gameOver && gameStarted) {
+      drawPancake(playerDrawX, playerDrawY, playerDrawR, pancake.toppings, pancake.toppingPatterns);
+      drawNameLabel(pancake.name, playerDrawX, playerDrawY, playerDrawR);
     }
-  });
-  syrupShots.forEach(drawSyrupShot);
-  const playerDrawX = pancake.x - camera.x;
-  const playerDrawY = pancake.y - camera.y;
-  const playerDrawR = Math.max(10, pancake.radius * RENDER_SCALE);
-  if (!gameOver && gameStarted) {
-    drawPancake(playerDrawX, playerDrawY, playerDrawR, pancake.toppings, pancake.toppingPatterns);
-    drawNameLabel(pancake.name, playerDrawX, playerDrawY, playerDrawR);
   }
   ctx.restore();
 

@@ -168,6 +168,76 @@ html, body {
   transform: translateY(1px);
 }
 
+#hostGame,
+#findGame {
+  margin-top: 10px;
+  padding: 8px 16px;
+  border: 2px solid #d49547;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #4a2e17;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#hostGame:hover,
+#findGame:hover {
+  background: #fff1da;
+}
+
+#hostGame:active,
+#findGame:active {
+  transform: translateY(1px);
+}
+
+#roomsPanel {
+  display: none;
+}
+
+#roomsList {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: #6b4f34;
+}
+
+.room-entry {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: #fff7ec;
+}
+
+.room-entry button {
+  padding: 4px 10px;
+  border: none;
+  border-radius: 999px;
+  background: #e7a95c;
+  color: #4a2e17;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#roomsRefresh,
+#roomsClose {
+  margin-top: 6px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 999px;
+  background: #e7a95c;
+  color: #4a2e17;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#roomsClose {
+  background: #f0e2cf;
+}
+
 #customizeDone {
   margin-top: 12px;
   padding: 8px 16px;
@@ -201,6 +271,13 @@ html, body {
   box-shadow: 0 4px 12px rgba(74, 46, 23, 0.15);
   display: grid;
   gap: 6px;
+}
+
+#siteName {
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.3px;
+  color: #6b4f34;
 }
 
 #leaderboard {
